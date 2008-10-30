@@ -5,10 +5,11 @@ use strict;
 use vars qw/$VERSION/;
 use base 'Class::Data::Inheritable';
 
+use Symbol;
 use File::Spec;
 use Carp;
 
-$VERSION = '0.07';
+$VERSION = '0.09';
 
 __PACKAGE__->mk_classdata(dir => (__FILE__ =~ /(.+)\.pm/)[0]);
 __PACKAGE__->mk_classdata(languages => {});
@@ -126,20 +127,21 @@ sub all_country_names {
 
 sub _load_data {
     my ($self, $lang) = @_;
+
     my $languages = $self->languages;
     my $language = $languages->{$lang};
 
     return $language if ref $language;	# already set
 
-    $language = $languages->{$lang} = [[], []];
-    my $file = File::Spec->catfile($self->dir, "$lang.dat");
-    open FH, $file or croak "$file: $!";
-    binmode FH, ':utf8'
+    ($lang, my $fh) = $self->_open_dat($lang);
+    binmode $fh, ':utf8'
 	if $self->use_io_layer or ref($self) and $self->{use_io_layer};
+
+    $language = $languages->{$lang} = [[], []];
 
     my $codes = $language->[CODE];
     my $countries = $language->[COUNTRY];
-    while (my $line = <FH>) {
+    while (my $line = <$fh>) {
 	chomp $line;
 	my ($alpha2, $alpha3, $numeric, @countries) = split(/:/, $line);
 	next unless ($alpha2);
@@ -152,18 +154,49 @@ sub _load_data {
 	    $countries->[LOCALE_CODE_NUMERIC]->{"\L$country"} = $numeric if ($numeric);
 	}
     }
-    close(FH);
+    close $fh;	# be a nice kid
 
     return $language;
+}
+
+sub _open_dat {
+    my $self = shift;
+    my $filename = lc(shift || '');
+    my $fh = gensym;	# required before Perl 5.6
+    my @errors;
+    my $lang;		# stores the actual name used for loading
+
+    # backwards compatibility
+    if ($filename eq 'cn') {
+	$filename = 'zh';	# zh is simplified Han Chinese (hans)
+    }
+    elsif ($filename eq 'tw') {
+	$filename = 'zh-tw';	# zh-tw is traditional Han Chinese (hant)
+    }
+
+    # be tolerant on language identifier format as long as language comes
+    # first, optionally followed by region:
+    # "en_GB", "en-gb", "EN -> GB" is all the same.
+    for (my @lang = split /[^A-Za-z]+/, $filename; @lang; pop @lang) {
+	$lang = join('-', @lang);
+	$filename = File::Spec->catfile($self->dir, "$lang.dat");
+	open $fh, $filename
+	    and return $lang => $fh
+	    or push @errors, "$filename: $!";
+    }
+    # succeed or die
+    croak join(', ', @errors);
 }
 
 1;
 
 __END__
 
+=encoding utf-8
+
 =head1 NAME
 
-Locale::Country::Multilingual - ISO codes for country identification with multi-language (ISO 3166)
+Locale::Country::Multilingual - mapping ISO codes to localized country names
 
 =head1 SYNOPSIS
 
@@ -175,7 +208,7 @@ Locale::Country::Multilingual - ISO codes for country identification with multi-
     $country = $lcm->code2country('250');       # $country gets 'France'
     $code    = $lcm->country2code('Norway');    # $code gets 'no'
     
-    $lcm->set_lang('cn'); # set default language to Chinese
+    $lcm->set_lang('zh_CN'); # set default language to Chinese
     $country = $lcm->code2country('cn');        # $country gets '中国'
     $code    = $lcm->country2code('日本');      # $code gets 'jp'
     
@@ -185,7 +218,7 @@ Locale::Country::Multilingual - ISO codes for country identification with multi-
     # more heavy call
     my $lang = 'en';
     $country = $lcm->code2country('cn', $lang);        # $country gets 'China'
-    $lang = 'cn';
+    $lang = 'zh_CN';
     $country = $lcm->code2country('cn', $lang);        # $country gets '中国'
     
     my $CODE = 'LOCALE_CODE_ALPHA_2'; # by default
@@ -194,12 +227,30 @@ Locale::Country::Multilingual - ISO codes for country identification with multi-
     $code    = $lcm->country2code('Norway', $CODE);    # $code gets 'nor'
     $CODE = 'LOCALE_CODE_NUMERIC';
     $code    = $lcm->country2code('Norway', $CODE);    # $code gets '578'
-    $code    = $lcm->country2code('挪威', $CODE, 'cn');    # with lang=cn
+    $code    = $lcm->country2code('挪威', $CODE, 'zh_CN');    # with lang=zh_CN
     
     $CODE = 'LOCALE_CODE_ALPHA_3';
-    $lang = 'cn';
+    $lang = 'zh_CN';
     @codes   = $lcm->all_country_codes($CODE);         # return codes with 3alpha
     @names   = $lcm->all_country_names($lang);         # get all Chinese Countries Names
+
+=head1 DESCRIPTION
+
+C<Locale::Country::Multilingual> is nearly a drop-in replacement for
+L<Locale::Country|Locale::Country>, but supports country names in several
+languages.
+
+A language is selected by a two-letter language code as described by
+ISO 639-1 L<http://en.wikipedia.org/wiki/List_of_ISO_639-1_codes>.
+This code can be amended by a two-letter region code, that is described by
+ISO 3166-1 L<http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2>.
+This combination of language and region is also described in RFC 4646
+L<http://www.ietf.org/rfc/rfc4646.txt> and RFC 4647
+L<http://www.ietf.org/rfc/rfc4647.txt>, and is commonly used for
+HTTP 1.1 L<http://www.ietf.org/rfc/rfc2616.txt> and the POSIX
+L<setlocale(3)> function. Codes can be given in small or capital letters
+and be divided by an arbitrary string of none-letter ASCII bytes (but
+C<"-"> or C<"_"> is recommended).
 
 =head1 METHODS
 
@@ -209,7 +260,7 @@ Locale::Country::Multilingual - ISO codes for country identification with multi-
 
 The C<import> class method is called when a module is C<use>'d.
 Language files can be pre-loaded at compile time, by specifying their
-two-letter ISO codes. This can be useful when several processes are forked
+language codes. This can be useful when several processes are forked
 from the main application, e.g. in an Apache C<mod_perl> environment -
 language data that is loaded before forking, is shared by all processes.
 
@@ -248,7 +299,8 @@ for more information.
 
   $lcm->set_lang('de');
 
-Set the current language. Only argument is a two-letter ISO code.
+Set the current language. Only argument is a language code as described in
+the L</DESCRIPTION> above.
 
 See L</AVAILABLE LANGAUGES> for what codes are accepted.
 
@@ -272,7 +324,7 @@ this way:
 =head2 code2country
 
   $country = $lcm->code2country('gb');
-  $country = $lcm->code2country('gb', 'cn');
+  $country = $lcm->code2country('gb', 'zh_CN');
 
 Turns an ISO 3166-1 code into a country name in the current language.
 The default language is C<"en">.
@@ -285,7 +337,7 @@ L</set_lang>.
 
 Returns the country name.
 
-This method L<croaks|Carp/croak> if the language is not available.
+This method L<croaks|Carp> if the language is not available.
 
 =head2 country2code
 
@@ -306,7 +358,7 @@ optional too.
 
 Returns an ISO-3166 code or C<undef> if search fails.
 
-This method L<croaks|Carp/croak> if the language is not available.
+This method L<croaks|Carp> if the language is not available.
 
 =head2 all_country_codes
 
@@ -322,33 +374,55 @@ locale.
 
 =over 4
 
-=item en - English
+=item en English
 
-=item cn - Chinese Simp.
+=item zh (zh-cn) Chinese Simp.
 
-=item tw - Chinese Trad.
+=item zh-tw Chinese Trad.
 
-=item it - Italian
+=item it Italian
 
-=item es - Spanish
+=item es Spanish
 
-=item pt - Portuguese
+=item pt Portuguese
 
-=item de - German
+=item de German
 
-=item fr - French
+=item fr French
 
-=item ja - Japanese
+=item ja Japanese
 
-=item no - Norwegian
+=item no Norwegian
 
 =back
 
 other languages are welcome to send by email.
 
+=head2 Deprecated languages
+
+Previous releases of this module offered languages C<"cn"> and C<"tw">.
+Those were replaced by C<"zh"> and C<"zh-tw"> to comply with the ISO 639
+standard and RFC 2616. C<"cn"> and C<"tw"> will be removed in a future
+release of this package.
+
+=head1 SUPPORTS
+
+=over 4
+
+=item subversion trunk
+
+L<http://code.google.com/p/perl-locale-country-multilingual/>
+
+=back
+
 =head1 SEE ALSO
 
-L<Locale::Country>
+L<Locale::Country|Locale::Country>,
+ISO 639 L<http://en.wikipedia.org/wiki/ISO_639>,
+ISO 3166 L<http://en.wikipedia.org/wiki/ISO_3166>,
+RFC 2616 L<http://www.ietf.org/rfc/rfc2616.txt>
+RFC 4646 L<http://www.ietf.org/rfc/rfc4646.txt>,
+RFC 4647 L<http://www.ietf.org/rfc/rfc4647.txt>
 
 =head1 ACKNOWLEDGEMENTS
 
@@ -358,11 +432,13 @@ Thanks to Andreas Marienborg for Norwegian dat file.
 
 =head1 AUTHOR
 
-Fayland Lam, C<< <fayland at gmail.com> >>
+Fayland Lam <fayland at gmail.com>
+
+Bernhard Graf <graf at cpan.org>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2007-2008 Fayland Lam, all rights reserved.
+Copyright 2007-2008 *AUTHOR* all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
