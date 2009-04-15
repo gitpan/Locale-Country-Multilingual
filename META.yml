@@ -20,4 +20,4 @@ requires:
   Class::Data::Inheritable: 0
   File::Spec: 0
   Symbol: 0
-version: 0.22
+version: 0.23
