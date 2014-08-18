@@ -1,0 +1,29 @@
+---
+abstract: 'mapping ISO codes to localized country names'
+author:
+  - 'Fayland Lam <fayland at gmail.com>'
+  - 'Bernhard Graf <graf@cpan.org>'
+build_requires:
+  ExtUtils::MakeMaker: '6.36'
+  Test::More: '0'
+configure_requires:
+  ExtUtils::MakeMaker: '6.36'
+dynamic_config: 0
+generated_by: 'Module::Install version 1.06, CPAN::Meta::Converter version 2.141170'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: '1.4'
+name: Locale-Country-Multilingual
+no_index:
+  directory:
+    - inc
+    - t
+requires:
+  Carp: '0'
+  Class::Data::Inheritable: '0'
+  File::Spec: '0'
+  Symbol: '0'
+resources:
+  license: http://dev.perl.org/licenses/
+version: '0.24'
