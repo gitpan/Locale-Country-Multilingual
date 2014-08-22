@@ -1,8 +1,19 @@
+# PODNAME: Locale::Country::Multilingual::Unicode
+# ABSTRACT: Recommended Usage with Unicode
+
+__END__
+
+=pod
+
 =encoding utf-8
 
 =head1 NAME
 
 Locale::Country::Multilingual::Unicode - Recommended Usage with Unicode
+
+=head1 VERSION
+
+version 0.25
 
 =head1 SYNOPSIS
 
@@ -15,8 +26,7 @@ Locale::Country::Multilingual::Unicode - Recommended Usage with Unicode
   $lcm->set_lang('de');
   print $lcm->code2country('gb'), "\n";
 
-I<If you don't run Perl 5.8.1 or higher you should either upgrade or ignore
-this manual page.>
+=head1 DESCRIPTION
 
 You are on a modern computer system, that uses C<utf-8> encoding by
 default. L<Locale::Country::Multilingual> uses language data, that is
@@ -112,6 +122,10 @@ Wow! Even the C<"ß"> has been converted correctly into C<"SS">.
 
 =back
 
+=head1 NAME
+
+Locale::Country::Multilingual::Unicode - Recommended Usage with Unicode
+
 =head1 SEE ALSO
 
 L<perluniintro|perluniintro>, L<Encode::StdIO|Encode::StdIO>
@@ -123,3 +137,30 @@ Bernhard Graf C<graf(a)cpan,org>
 =head1 COPYRIGHT & LICENSE
 
 This text is in the public domain.
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Bernhard Graf <graf@cpan.org>
+
+=item *
+
+Fayland Lam <fayland@gmail.com>
+
+=item *
+
+Greg Oschwald <oschwald@cpan.org>
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2014 by Fayland Lam.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut

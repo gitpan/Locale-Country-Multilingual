@@ -1,15 +1,15 @@
 package Locale::Country::Multilingual;
-
-use warnings;
+$Locale::Country::Multilingual::VERSION = '0.25';
 use strict;
-use vars qw/$VERSION/;
+use warnings;
+
 use base 'Class::Data::Inheritable';
+
+use 5.008;
 
 use Symbol;
 use File::Spec;
 use Carp;
-
-$VERSION = '0.24';
 
 __PACKAGE__->mk_classdata(dir => (__FILE__ =~ /(.+)\.pm/)[0]);
 __PACKAGE__->mk_classdata(languages => {});
@@ -191,34 +191,34 @@ sub _open_dat {
 
 1;
 
-__END__
+=pod
 
 =encoding utf-8
 
 =head1 NAME
 
-Locale::Country::Multilingual - mapping ISO codes to localized country names
+Locale::Country::Multilingual - Map ISO codes to localized country names
 
 =head1 VERSION
 
-Version 0.24
+version 0.25
 
 =head1 SYNOPSIS
 
     use Locale::Country::Multilingual {use_io_layer => 1};
 
     my $lcm = Locale::Country::Multilingual->new();
-    $country = $lcm->code2country('JP');        # $country gets 'Japan'
+    my $country = $lcm->code2country('JP');        # $country gets 'Japan'
     $country = $lcm->code2country('CHN');       # $country gets 'China'
     $country = $lcm->code2country('250');       # $country gets 'France'
-    $code    = $lcm->country2code('Norway');    # $code gets 'NO'
+    my $code    = $lcm->country2code('Norway');    # $code gets 'NO'
 
     $lcm->set_lang('zh'); # set default language to Chinese
     $country = $lcm->code2country('CN');        # $country gets '中国'
     $code    = $lcm->country2code('日本');      # $code gets 'JP'
 
-    @codes   = $lcm->all_country_codes();
-    @names   = $lcm->all_country_names();
+    my @codes   = $lcm->all_country_codes();
+    my @names   = $lcm->all_country_names();
 
     # more heavy call
     my $lang = 'en';
@@ -612,21 +612,40 @@ Thanks to Andreas Marienborg for Norwegian dat file.
 
 Thanks to all contributors of the Unicode CLDR Project.
 
-=head1 AUTHORS
-
-Fayland Lam <fayland at gmail.com>
-
-Bernhard Graf <graf at cpan.org>
-
-Gregory Oschwald <oschwald at cpan.org>
-
-=head1 COPYRIGHT & LICENSE
-
-Copyright 2007-2014 by the aforementioned authors.
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
+=head1 CLDR LICENSE
 
 Part of the data used for this module is generated from data provided by
 the CLDR project. See the LICENSE.cldr in this distribution for details
 on the CLDR data's license.
+
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Bernhard Graf <graf@cpan.org>
+
+=item *
+
+Fayland Lam <fayland@gmail.com>
+
+=item *
+
+Greg Oschwald <oschwald@cpan.org>
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2014 by Fayland Lam.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+
+__END__
+
+# ABSTRACT: Map ISO codes to localized country names
+
